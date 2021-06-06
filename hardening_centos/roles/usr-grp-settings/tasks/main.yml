@@ -1,0 +1,233 @@
+---
+# tasks file for usr-grp-settings
+## Ensure password fields are not empty
+## Rationale: All accounts must have passwords or be locked to prevent the account from being used by an unauthorized user.
+
+- name: Ensure password fields are not empty
+  ansible.builtin.shell: >
+    cat /etc/shadow | awk -F: '($2 == "" ) { print $1 " does not have a password "}'
+  register: passwdfieldnoempty
+- ansible.builtin.debug:
+    var: passwdfieldnoempty.stdout_lines
+
+## Ensure no legacy "+" entries exist in /etc/passwd - Troubleshooting ongoing
+## Rationale: These entries may provide an avenue for attackers to gain privileged access on the system.
+
+# - name: Ensure no legacy "+" entries exist in /etc/passwd
+#   shell: >
+#     grep '^\+:' /etc/passwd
+#   register: resultetcpasswd
+#  - debug: var=resultetcpasswd.stdout_lines
+
+## Ensure root PATH integrity
+## Rationale: Including the current working directory (.) or other writable directory in root 's executable path makes it likely that an attacker can gain superuser access by forcing an administrator operating as root to execute a Trojan horse program.
+
+- name: Ensure root PATH integrity - CentOS or Red Hat distribution
+  ansible.builtin.command: sh /home/13-rootpathintegrity-rh.sh
+  args:
+    executable: /bin/bash
+  register: rootpathintegrityrh
+  when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
+- ansible.builtin.debug: var=rootpathintegrityrh.stdout_lines
+
+## Ensure no legacy "+" entries exist in /etc/shadow - Troubleshooting ongoing
+## Rationale : These entries may provide an avenue for attackers to gain privileged access on the system.
+
+#  - name: Ensure no legacy "+" entries exist in /etc/group
+#    shell: >
+#      grep '^\+:' /etc/shadow
+#    register: resultetcshadow
+#  - debug: var=resultetcshadow.stdout_lines
+
+## Ensure no legacy "+" entries exist in /etc/group - Troubleshooting in progress
+## Rationale: These entries may provide an avenue for attackers to gain privileged access on the system.
+
+#  - name: Ensure no legacy + extries exist in /etc/group
+#    shell: >
+#      grep '^\+:' /etc/group
+#    register: nolegacyentries
+#  - debug: var=nolegacyenteries.stdout_lines
+
+## Ensure root is the only UID 0 account
+## Rationale: This access must be limited to only the default root account and only from the system console. Administrative access must be through an unprivileged account using an approved mechanism as noted in Item 5.6 Ensure access to the su command is restricted.
+
+- name: Ensure root is the only account with 0 UID - CentOS or Red Hat distribution
+  ansible.builtin.shell: >
+    awk -F: '($3 == 0) { print $1 }' /etc/passwd
+  register: rootonlyuidrh
+  when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
+- ansible.builtin.debug: var=rootonlyuidrh.stdout_lines
+
+## Ensure users' home directories permissions are 750 or more restrictive
+## Rationale: Group or world-writable user home directories may enable malicious users to steal or modify other users' data or to gain another user's system privileges.
+
+
+#  - name: Ensure users home directories permissions are 750 or more restrictive - CentOS or Red Hat Distribution
+#    command: sh /home/11-usrhomeperms-rh.sh
+#    args:
+#      executable: /bin/bash
+#    register: usrhomepermsrh
+#    when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
+#  - debug: var=usrhomepermsrh.stdout_lines
+
+# Ensure users own their home directories
+## Rationale: Since the user is accountable for files stored in the user home directory, the user must be the owner of the directory.
+
+
+#  - name: Ensure users own their home directory - CentOS or Red Hat Distributions
+#    command: sh /home/10-usrsowntheirhome-rh.sh
+#    args:
+#      executable: /bin/bash
+#    register: usrsowntheirhomerh
+#    when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
+#  - debug: var=usrsowntheirhomerh.stdout_lines
+
+## Ensure users' dot files are not group or world writable
+## Rationale:  Group or world-writable user configuration files may enable malicious users to steal or modify other users' data or to gain another user's system privileges.
+
+#  - name: Ensure users dot files are not group or world accessible - Debian or Ubuntu distribution
+#    command: sh /home/09-dotfilesnogrpworld-deb.sh
+#    args:
+#      executable: /bin/bash
+#    register: dotfilesnogrpworlddeb
+#    when: ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
+#  - debug: var=dotfilesnogrpworlddeb.stdout_lines
+
+#  - name: Ensure users dot files are not group or world accessible - CentOS or Red Hat distribution
+#    command: sh /home/09-dotfilesnogrpworld-rh.sh
+#    args:
+#      executable: /bin/bash
+#    register: dotfilesnogrpworldrh
+#    when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
+#  - debug: var=dotfilesnogrpworldrh.stdout_lines
+
+## Ensure no users have .forward files
+## Rationale: Use of the .forward file poses a security risk in that sensitive data may be inadvertently transferred outside the organization. The .forward file also poses a risk as it can be used to execute commands that may perform unintended actions.
+
+#  - name: Ensure no users have .forward files - Debian or Ubuntu distribution
+#    command: sh /home/15-nousrforwardfile-deb.sh
+#    args:
+#      executable: /bin/bash
+#    register: nousrforwardfiledeb
+#    when: ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
+#  - debug: var=nousrforwardfiledeb.stdout_lines
+
+#  - name: Ensure no users have .forward files - CentOS or Red Hat distribution
+#    command: sh /home/15-nousrforwardfile-rh.sh
+#    args:
+#      executable: /bin/bash
+#    register: nousrforwardfilerh
+#    when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
+#  - debug: var=nousrforwardfilerh.stdout_lines
+
+## Ensure no users have .netrc files
+## Rationale: The .netrc file presents a significant security risk since it stores passwords in unencrypted form. Even if FTP is disabled, user accounts may have brought over .netrc files from other systems which could pose a risk to those systems.
+
+#  - name: Ensure no users have .netrc files -- Debian or Ubuntu distribution
+#    command: sh /home/08-nousersnetrcfiles-deb.sh
+#    args:
+#      executable: /bin/bash
+#    register: nousersnetrcfilesdeb
+#    when: ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
+#  - debug: var=nousersnetrcfilesdeb.stdout_lines
+
+#  - name: Ensure no users have .netrc files -- CentOS or Red Hat distribution
+#    command: sh /home/08-nousersnetrcfiles-rh.sh
+#    args:
+#      executable: /bin/bash
+#    register: nousersnetrcfilesrh
+#    when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
+#  - debug: var=nousersnetrcfilesrh.stdout_lines
+
+## Ensure users' .netrc Files are not group or world accessible
+## Rationale : .netrc files may contain unencrypted passwords that may be used to attack other systems.
+
+#  - name: Ensure user netrc files are not group and world accessible - CentOS or Red Hat distribution
+#    command: sh /home/07-netrcfilesnogrpworld-rh.sh
+#    args:
+#      executable: /bin/bash
+#    register: netrcfilesnogrpworldrh
+#    when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
+#  - debug: var=netrcfilesnogrpworldrh.stdout_lines
+
+## These are commented as they are taking long time to implement. This can slowdown or even crash the system while testing.
+## Ensure no users have .rhosts files
+## Rationale: This action is only meaningful if .rhosts support is permitted in the file /etc/pam.conf . Even though the .rhosts files are ineffective if support is disabled in /etc/pam.conf , they may have been brought over from other systems and could contain information useful to an attacker for those other systems.
+
+
+#  - name: Ensure no users have rhosts file -- CentOS or Red Hat distribution
+#    command: sh /home/06-nousersrhostsfiles-rh.sh
+#    args:
+#      executable: /bin/bash
+#    register: nousersrhostsfilesrh
+#    when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
+#  - debug: var=nousersrhostsfilesrh.stdout_lines
+
+## Ensure all groups in /etc/passwd exist in /etc/group -- This will serve both distributions - Configuration to check this is the same for both distros.
+## Rationale : Groups defined in the /etc/passwd file but not in the /etc/group file pose a threat to system security since group permissions are not properly managed.
+
+- name: Ensure all groups in /etc/passwd exist in /etc/group
+  ansible.builtin.command: sh /home/05-allgroupexistpasswd.sh
+  args:
+    executable: /bin/bash
+  register: allgroupexistpasswd
+- ansible.builtin.debug: var=allgroupexistpasswd.stdout_lines
+
+## Ensure no duplicate UIDs exist
+## Rationale: Users must be assigned unique UIDs for accountability and to ensure appropriate access protections.
+
+
+- name: Ensure no duplicate UIDs exist -- CentOS or Red Hat distribution
+  ansible.builtin.command: sh /home/04-nodupuids-rh.sh
+  args:
+    executable: /bin/bash
+  register: nodupuidsrh
+  when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
+- ansible.builtin.debug: var=nodupuidsrh.stdout_lines
+
+## Ensure no duplicate GIDs exist
+## Rationale: User groups must be assigned unique GIDs for accountability and to ensure appropriate access protections.
+
+- name: Ensure no Duplicate GIDs exist -- CentOS or Red Hat distribution
+  ansible.builtin.command: sh /home/03-nodupgids-rh.sh
+  args:
+    executable: /bin/bash
+  register: nodupgidsrh
+  when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
+- ansible.builtin.debug:
+    var: nodupgidsrh.stdout_lines
+
+## Ensure no duplicate user names exist
+## Rationale: If a user is assigned a duplicate user name, it will create and have access to files with the first UID for that username in /etc/passwd . For example, if "test4" has a UID of 1000 and a subsequent "test4" entry has a UID of 2000, logging in as "test4" will use UID 1000. Effectively, the UID is shared, which is a security problem.
+
+- name: Ensure no duplicate user names exist - CentOS or Red Hat Distributions
+  ansible.builtin.command: sh /home/02-nodupusrname-rh.sh
+  args:
+    executable: /bin/bash
+  register: nodupusrnamerh
+  when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
+- ansible.builtin.debug:
+    var: nodupusrnamerh.stdout_lines
+
+## Ensure no duplicate group names exists
+## Rationale: If a group is assigned a duplicate group name, it will create and have access to files with the first GID for that group in /etc/group . Effectively, the GID is shared, which is a security problem.
+
+- name: Ensure no Duplicate group names exist - CentOS or Red Hat Distributions
+  ansible.builtin.command: sh /home/01-nodupgroupnames-rh.sh
+  args:
+    executable: /bin/bash
+  register: nodupgroupnamesrh
+  when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
+- ansible.builtin.debug: var=nodupgroupnamesrh.stdout_lines
+
+## Ensure Shadow group is empty
+## Rationale: Any users assigned to the shadow group would be granted read access to the /etc/shadow file. If attackers can gain read access to the /etc/shadow file, they can easily run a password cracking program against the hashed passwords to break them. Other security information that is stored in the /etc/shadow file (such as expiration) could also be useful to subvert additional user accounts.
+
+- name: Ensure shadow group is empty
+  ansible.builtin.shell: >
+    awk -F: '($4 == "<shadow-gid>") { print }' /etc/passwd
+  register: shadowgrpempty
+- debug: var=shadowgrpempty.stdout_lines
+
+
+

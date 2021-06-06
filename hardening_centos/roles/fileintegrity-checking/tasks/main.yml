@@ -1,0 +1,43 @@
+---
+# tasks file for fileintegrity-checking
+#Check AIDE is installed and present. AIDE is known as Advanced Intrusion Detection Environment which basically runs a scan on newly created files.
+## Rationale: By monitoring the filesystem state compromised files can be detected to prevent or limit the exposure of accidental or malicious misconfigurations or modified binaries.
+- name: Check AIDE is installed and present - CentOS or Red Hat Distribution only
+  ansible.builtin.yum:
+    name: aide
+    state: present
+  when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
+
+## The following commented lines should be implemented. but currently experiencing some issues. Need to troubleshoot.
+
+- block:
+  - name: Check if already an AIDE installation exists on CentOS hosts
+    ansible.builtin.stat: path=/var/lib/aide/aideinstallation.log
+    register: ccentos
+    when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
+  - name: Verify if the path exists
+    ansible.builtin.command: echo "An AIDE installation already exists, Progressing to next task"
+    when:
+      - ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
+      - ccentos.stat.exists == true
+  - name: Configure AIDE
+    shell: |
+      aide --init >> /var/lib/aide/aideinstallation.log
+      mv /var/lib/aide/aide.db.new.gz /var/lib/aide/aide.db.gz
+    args:
+      executable: /bin/bash
+    when:
+      - ansible_distribution == 'Centos' or ansible_distribution == 'Red Hat Enterprise Linux'
+      - ccentos.stat.exists == false
+
+## Ensure AIDE is configured to check the file system integrity
+## Rationale: Periodic file checking allows the system administrator to determine on a regular basis if critical files have been changed in an unauthorized fashion.
+
+- name: Ensure filesystem integrity is regularly checked -- CentOS or Red Hat distribution
+  ansible.builtin.cron:
+    name: aide_check
+    minute: "0"
+    hour: "5"
+    user: root
+    job: /usr/sbin/aide --check
+  when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'

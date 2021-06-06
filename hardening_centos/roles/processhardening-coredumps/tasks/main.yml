@@ -1,0 +1,28 @@
+---
+# tasks file for processhardening-coredumps
+## Rationale: Setting a hard limit on core dumps prevents users from overriding the soft variable. If core dumps are required, consider setting limits for user groups (see limits.conf(5) ). In addition, setting the fs.suid_dumpable variable to 0 will prevent setuid programs from dumping core.
+
+- name: Ensure Core Dumps service is enabled
+  ansible.builtin.shell: systemctl list-units | grep coredump
+  register: coredump
+  when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
+- debug: var=coredump.stdout_lines
+
+- name: Configure Coredump -- CentOS or Red Hat distritbuion
+  ansible.posix.sysctl:
+    name: fs.suid_dumpable
+    state: absent
+    value: '0'
+    sysctl_file: /etc/sysctl.conf
+  when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
+
+## Address space layout randomization is enabled.
+## Rationale: Randomly placing virtual memory regions will make it difficult to write memory page exploits as the memory placement will be consistently shifting.
+
+- name: Ensure address space layout randomization is enabled
+  ansible.posix.sysctl:
+    name: kernel.randomize_va_space
+    state: present
+    value: '2'
+    sysctl_file: /etc/sysctl.conf
+  when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'

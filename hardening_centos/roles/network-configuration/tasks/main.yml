@@ -1,0 +1,134 @@
+---
+# tasks file for network-configuration
+### Network Related Hardening
+## Rationale : Attackers could use bogus ICMP redirect messages to maliciously alter the system routing tables and get them to send packets to incorrect networks and allow your system packets to be captured. It is still possible for even known gateways to be compromised. Setting net.ipv4.conf.all.secure_redirects to 0 protects the system from routing table updates by possibly compromised known gateways.
+- name: Disabling relevant IPv4 Packet filtering configuration
+  ansible.posix.sysctl:
+    name: "{{ item }}"
+    state: absent
+    sysctl_file: /etc/sysctl.conf
+  register: ipv4config_disabling
+  with_items:
+    - "net.ipv4.conf.all.send_redirects"
+    - "net.ipv4.conf.default.send_redirects"
+    - "net.ipv4.conf.all.accept_redirects"
+    - "net.ipv4.conf.default.accept_redirects"
+    - "net.ipv6.conf.all.accept_redirects"
+    - "net.ipv6.conf.default.accept_redirects"
+    - "net.ipv4.conf.all.secure_redirects"
+    - "net.ipv4.conf.default.secure_redirects"
+- debug:
+    var: ipv4config_disabling
+
+# Ensure suspicious packets are logged
+## Rationale: Enabling this feature and logging these packets allows an administrator to investigate the possibility that an attacker is sending spoofed packets to their system.
+
+- name: Enabling necessary packet filtering configuration
+  ansible.posix.sysctl:
+    name: "{{ item }}"
+    state: present
+    value: '1'
+    sysctl_file: /etc/sysctl.conf
+  register: ipv4config_enabling
+  with_items:
+    - "net.ipv4.conf.all.log_martians"
+    - "net.ipv4.conf.default.log_martians"
+
+## Ensure broadcast ICMP requests are ignored
+## Rationale: Accepting ICMP echo and timestamp requests with broadcast or multicast destinations for your network could be used to trick your host into starting (or participating) in a Smurf attack. A Smurf attack relies on an attacker sending large amounts of ICMP broadcast essages with a spoofed source address. All hosts receiving this message and responding would send echo-reply messages back to the spoofed address, which is probably not routable. If many hosts respond to the packets, the amount of traffic on the network could be significantly multiplied. Some routers (and some attackers) will send responses that violate RFC-1122 and attempt to fill up a log file system with many useless error messages.
+
+- name: Ensure broadcast ICMP requests are ignored
+  ansible.posix.sysctl:
+    name: "{{ item }}"
+    state: present
+    value: '1'
+    sysctl_file: /etc/sysctl.conf
+  with_items:
+    - "net.ipv4.icmp_echo_ignore_broadcasts"
+    - "net.ipv4.icmp_ignore_bogus_error_responses"
+
+## Ensure Reverse path filtering enables
+## Rationale: Setting these flags is a good way to deter attackers from sending your system bogus packets that cannot be responded to. One instance where this feature breaks down is if asymmetrical routing is employed. This would occur when using dynamic routing protocols (bgp, ospf, etc) on your system. If you are using asymmetrical routing on your system, you will not be able to enable this feature without breaking the routing.
+
+- name: Ensure reverse path filtering is enabled
+  ansible.posix.sysctl:
+    name: net.ipv4.conf.default.rp_filter
+    state: present
+    value: '1'
+    sysctl_file: /etc/sysctl.conf
+
+## Enable TCP SYN cookies is enabled
+## Rationale: Attackers use SYN flood attacks to perform a denial of service attacked on a system by sending many SYN packets without completing the three way handshake. This will quickly use up slots in the kernel's half-open connection ueue and prevent legitimate connections from succeeding. SYN cookies allow the system to keep accepting valid connections, even if under a denial of service attack.
+
+- name: Ensure TCP SYN cookies is enabled
+  ansible.posix.sysctl:
+    name: net.ipv4.tcp_syncookies
+    state: present
+    value: '1'
+    sysctl_file: /etc/sysctl.conf
+
+## Remove uncommon network protocols that are not in use
+## Rationale : If the protocol is not required, it is recommended that the drivers not be installed to reduce the potential attack surface.
+
+- name: Ensure DCCP is disabled
+  ansible.builtin.command: lsmod | grep dccp
+  register: dccp
+  failed_when: dccp.rc != 1 and dccp.rc != 0
+- debug:
+    var: dccp.stdout_lines
+
+- name: Ensure SCTP is disabled
+  ansible.builtin.command: lsmod | grep sctp
+  register: sctp
+  failed_when: sctp.rc != 1 and sctp.rc != 0
+- debug:
+    var: sctp.stdout_lines
+
+- name: Ensure RDS is disabled
+  ansible.builtin.command: lsmod | grep rds
+  register: rds
+  failed_when: rds.rc != 1 and rds.rc != 0
+- debug:
+    var: rds.stdout_lines
+
+- name: Ensure TIPC is disabled
+  ansible.builtin.command: lsmod | grep tipc
+  register: tipc
+  failed_when: tipc.rc != 1 and tipc.rc != 0
+- debug:
+    var: tipc.stdout_lines
+
+# Ensure permissions on /etc/hosts.allow are configured
+## Rationale: It is critical to ensure that the /etc/hosts.allow file is protected from unauthorized write access. Although it is protected by default, the file permissions could be changed either inadvertently or through malicious actions.
+
+- name: Ensure permissions on /etc/hosts.allow are configured
+  ansible.builtin.file:
+    path: /etc/hosts.allow
+    owner: root
+    group: root
+    mode: '0644'
+
+## Ensure permissions on /etc/hosts.deny are configured
+## Rationale: It is critical to ensure that the /etc/hosts.deny file is protected from unauthorized write access. Although it is protected by default, the file permissions could be changed either inadvertently or through malicious actions.
+
+- name: Ensure permissions on /etc/hosts.deny are configured
+  ansible.builtin.file:
+    path: /etc/hosts.deny
+    owner: root
+    group: root
+    mode: '0644'
+
+# Ensure /etc/hosts.deny is configured
+## Rationale: The /etc/hosts.deny file serves as a failsafe so that any host not specified in /etc/hosts.allow is denied access to the system.
+
+- name: Ensure /etc/hosts.deny is present on systems
+  ansible.builtin.file:
+    path: /etc/hosts.deny
+    state: touch
+  ignore_errors: true
+
+- name: Ensure /etc/hosts.deny is configured
+  ansible.builtin.lineinfile:
+    dest: /etc/hosts.deny
+    line: 'ALL: EXCEPT 10.8.0.80'
+    state: present

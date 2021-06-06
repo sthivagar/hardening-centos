@@ -1,0 +1,66 @@
+---
+# tasks file for services-hardening
+
+## Ensure xinetd is not installed
+## Rationale: If there are no xinetd services required, it is recommended that the package be removed.
+
+- name: Remove xinetd services
+  ansible.builtin.yum:
+    name: xinetd
+    state: absent
+  when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
+
+# Rationale: Time synchronization is important to support time sensitive security mechanisms like Kerberos and also ensures log files have consistent time records across the enterprise, which aids in forensic investigations. If chrony is in use on the system proper configuration is vital to ensuring time synchronization is working properly.
+
+- name: Install and Configure TimeSync packages
+  ansible.builtin.yum:
+    name: chrony
+    state: present
+    update_cache: yes
+    skip_broken: yes
+  when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
+
+# Ensure X window system is not installed
+## Rationale: Unless your organization specifically requires graphical login access via X Windows, remove it to reduce the potential attack surface.
+
+- name: Remove X Window system -- Centos
+  ansible.builtin.yum:
+    name: xorg-x11-server-Xorg
+    state: absent
+  when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
+
+## Rationale: The rsyncd service presents a security risk as it uses unencrypted protocols for communication.
+#  - name: Ensure rsync service is not enabled - CentOS or Red Hat specific
+#    systemd:
+#      name: rsync
+#      enabled: no
+#      masked: yes
+#    when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
+
+- name: Checking if irrelevant services are running
+  ansible.builtin.systemd:
+    name: "{{ item }}"
+    enabled: no
+    masked: yes
+    state: stopped
+  with_items:
+    - "snmpd"
+    - "squid"
+    - "smb"
+    - "dovecot"
+    - "vfstpd"
+    - "rpcbind"
+    - "nfs"
+    - "dhcpd"
+    - "cups"
+    - "ypserv"
+  ignore_errors: true
+  when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
+
+
+## Ensure mail transfer agent is configured for local-only mode
+## Rationale: The software for all Mail Transfer Agents is complex and most have a long history of security issues. While it is important to ensure that the system can process local mail messages, it is not necessary to have the MTA's daemon listening on a port unless the server is intended to be a mail server that receives and processes mail from other systems.
+
+
+# System Services - check certain system services are not enabled. Currently the following commands are failing. Troubleshooting in progress
+## Rationale: init.d is a super-server daemon that provides internet services and passes connections to configured services. While not commonly used inetd and any unneeded inetd based services should be disabled if possible.
