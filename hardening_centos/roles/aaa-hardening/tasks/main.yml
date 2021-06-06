@@ -1,0 +1,58 @@
+---
+# tasks file for aaa-hardening
+
+# Ensure auditd & syslog-ng service is enabled
+## Rationale: The capturing of system events provides system administrators with information to allow them to determine if unauthorized access to their system is occurring.
+
+- name: Enable relevant services if enabled - CentOS or Red Hat Distribution only
+  ansible.builtin.systemd:
+    name: "{{ item }}"
+    enabled: yes
+  with_items:
+    - "rsyslog"
+    - "auditd"
+    - "crond"
+  when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
+
+## Cron file security
+## Rationale: This file contains information on what system jobs are run by cron. Write access to these files could provide unprivileged users with the ability to elevate their privileges. Read access to these files could provide users with the ability to gain insight on system jobs that run on the system and could provide them a way to gain unauthorized privileged access.
+
+- name: Verify & Configure Permissions for crontab
+  ansible.builtin.file:
+    path: /etc/crontab
+    owner: root
+    group: root
+    mode: '0600'
+
+- name: Verify & Configure Permissions for hourly cron
+  ansible.builtin.file:
+    path: /etc/{{ item }}
+    owner: root
+    group: root
+    mode: '0700'
+  with_items:
+    - cron.hourly
+    - cron.daily
+    - cron.monthly
+    - cron.weekly
+    - cron.d
+
+- name: Ensure cron/at is restricted to authorized users only
+  ansible.builtin.file:
+    name: /etc/{{ item }}
+    state: absent
+  with_items:
+    - cron.deny
+    - at.deny
+
+- name: Create cron/at allow files configuration
+  ansible.builtin.file:
+    name: /etc/{{ item }}
+    state: touch
+    owner: root
+    group: root
+    mode: '0644'
+  with_items:
+    - cron.allow
+    - at.allow
+

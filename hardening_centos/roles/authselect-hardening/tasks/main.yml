@@ -1,0 +1,37 @@
+---
+# tasks file for authselect-hardening
+## Configure authselect
+## Create a custom authselect profile - To be discussed with Pak/Kyle - This overrides the SSSD Configuration above.
+#Authselect is a utility that simplifies the configuration of user authentication on a CentOS Linux host. Authselect offers two ready-made profiles that can be universally used with all  modern identity management systems.
+## Rationale: A custom profile is required to customize many of the pam options
+
+- name: Check if a profile exist on the current node
+  command: authselect current
+  register: authselectout
+  when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
+
+- name: Verifying the current profile
+  command: echo "There is currently a profile available - Completing checks"
+  when:
+    - ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
+    - authselectout.stdout.find('custom') != ""
+
+- name: Create a custom authselect profile
+  command: authselect create-profile armour-security -b sssd --symlink-meta
+  args:
+    executable: /bin/bash
+  when:
+    - ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
+    - authselectout.stdout == ""
+
+## Ensure authselect includes with-faillock
+## Rationale: Locking out user IDs after n unsuccessful consecutive login attempts mitigates brute force password attacks against your systems.
+
+- name: Ensure authselect includes with-faillock
+  command: authselect select custom/armour-security with-sudo with-faillock without-nullok
+  args:
+    executable: /bin/bash
+  when:
+    - ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
+    - authselectout.stdout == ""
+

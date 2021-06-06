@@ -1,0 +1,94 @@
+---
+# tasks file for filesystem-hardeninig
+
+## Cramfs - Description : The vFAT filesystem format is primarily used on older windows systems and portable USB drives or flash modules. It comes in three types FAT12 , FAT16 , and FAT32 all of which are supported by the vfat kernel module.
+## Rationale: Removing support for unneeded filesystem types reduces the local attack surface of the system. If this filesystem type is not needed, disable it.
+
+- name: Ensure Cramfs filesystem is disabled
+  ansible.builtin.command: lsmod | grep cramfs
+  register: cramfs
+  failed_when: cramfs.rc != 1 and cramfs.rc != 0
+- ansible.builtin.debug: var=cramfs.stdout_lines
+
+## Freevxfs filesystem should be disabled - Debian specific
+## Rationale: Removing support for unneeded filesystem types reduces the local attack surface of the system. If this filesystem type is not needed, disable it.
+
+- name: Ensure freevxfs is disabled
+  ansible.builtin.command: lsmod | grep freevxfs
+  register: freevxfs
+  failed_when: freevxfs.rc != 1 and freevxfs.rc != 0
+- ansible.builtin.debug: var=freevxfs.stdout_lines
+
+## Ensure jffs2 filesystem is disabled - Ubuntu distributions only
+## Rationale: Removing support for unneeded filesystem types reduces the local attack surface of the system. If this filesystem type is not needed, disable it.
+
+- name: Ensure jffs2 file system is disabled
+  ansible.builtin.command: lsmod | grep jffs2
+  register: jffs2fs
+  failed_when: jffs2fs.rc != 1 and jffs2fs.rc != 0
+- ansible.builtin.debug: var=jffs2fs.stdout_lines 
+ 
+## Squashfs filesystems is disabled
+## Rationale : Removing support for unneeded filesystem types reduces the local attack surface of the system. If this filesystem type is not needed, disable it.
+
+- name: Ensure squashfs filesystem is disabled
+  ansible.builtin.command: lsmod | grep squashfs
+  register: squashfs
+  failed_when: squashfs.rc != 1 and squashfs.rc != 0
+- ansible.builtin.debug: var=squashfs.stdout_lines
+
+## Ensure hfs filesystem is disabled 
+## Rationale: Removing support for unneeded filesystem types reduces the local attack surface of the system. If this filesystem type is not needed, disable it.
+
+- name: Ensure hfs filesystem is disabled
+  ansible.builtin.command: lsmod | grep hfs
+  register: hfsfs
+  failed_when: hfsfs.rc != 1 and hfsfs.rc != 0
+- ansible.builtin.debug: var=hfsfs.stdout_lines
+
+## Ensure hfsplus filesystem is disabled
+## Rationale: Removing support for unneeded filesystem types reduces the local attack surface of the system. If this filesystem type is not needed, disable it.
+
+- name: Ensure hfsplus filesystem is disabled
+  ansible.builtin.command: lsmod | grep hfsplus
+  register: hfsplus
+  failed_when: hfsplus.rc != 1 and hfsplus.rc != 0
+- ansible.builtin.debug: var=hfsplus.stdout_lines
+
+## UDF Filesystems to be disabled
+## Rationale: Removing support for unneeded filesystem types reduces the local attack surface of the system. If this filesystem type is not needed, disable it.
+
+- name: Ensure udf filesystem is disabled
+  ansible.builtin.command: lsmod | grep udf
+  register: udffs
+  failed_when: udffs.rc != 1 and udffs.rc != 0
+- ansible.builtin.debug: var=udffs.stdout_lines
+
+## Ensure Sticky Bit is set on all world writable directories
+## Rationale: This feature prevents the ability to delete or rename files in world writable directories (such as /tmp ) that are owned by another user.
+
+- name: Ensure sticky bit is set on all world writable directories
+  ansible.builtin.command: df --local -P | awk '{if (NR!=1) print $6}' | xargs -I '{}' find '{}' -xdev -type d \( -perm -0002 -a ! -perm -1000 \) 2>/dev/null
+  register: stickybit
+  failed_when: stickybit.rc != 1 and stickybit.rc != 0
+- ansible.builtin.debug: var=stickybit.stdout_lines
+
+## Disable Automounting (Need to Troubleshoot)
+## Rationale: With automounting enabled anyone with physical access could attach a USB drive or disc and have its contents available in system even if they lacked permissions to mount it themselves.
+
+#  - name: Check if Autofs is running 
+#    stat: yum=autofs state=absent
+#    register: autois_installed
+#    failed_when: autois_installed.exists
+#  - name: Stop if Autofs is running
+#    systemd: name={{autofs}} state={{stopped}} enabled={{no}}
+#    failed_when: not autois_installed.stat.exists
+
+## Disable USB Storage
+## Rationale: Restricting USB access on the system will decrease the physical attack surface for a device and diminish the possible vectors to introduce malware.
+
+- name: Disable USB Storage
+  ansible.builtin.command: lsmod | grep usb-storage
+  register: disableusb
+  failed_when: disableusb.rc != 1 and disableusb.rc != 0
+- ansible.builtin.debug: var=disableusb.stdout_lines

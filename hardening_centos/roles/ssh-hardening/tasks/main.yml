@@ -1,0 +1,204 @@
+---
+# tasks file for ssh-hardening
+## Ensure permissions on /etc/ssh/sshd_config are configured
+## Rationale : The /etc/ssh/sshd_config file needs to be protected from unauthorized changes by non-privileged users.
+
+- name: Ensure permissions on /etc/ssh/sshd_config are configured - CentOS or Red Hat distribution
+  file:
+    path: /etc/ssh/sshd_config
+    owner: root
+    group: root
+
+## Ensure SSH access is limited
+## Rationale: Restricting which users can remotely access the system via SSH will help ensure that only authorized users access the system.
+
+# - name: Ensure SSH is limited - Centos or Red Hat distribution
+#   lineinfile:
+#     path: /etc/ssh/sshd_config
+#     regexp: '{{ item.From }}'
+#     line: '{{ item.To }}'
+#   with_items:
+#     - { From: 'AllowUsers', To: 'AllowUsers armour'}
+#     - { From: 'AllowGroups', To: 'AllowGroups armour'}
+#   when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
+
+# Following lines need to be revised and need troubleshooting.
+
+## Ensure permissions on SSH private host key files are configured
+## Rationale: If an unauthorized user obtains the private SSH host key file, the host could be impersonated
+
+#  - name: Ensure permissions on SSH private host key files are configured
+#    shell: |
+#      find /etc/ssh -xdev -type f -name 'ssh_host_*_key' -exec chown root:root {} \;
+#      find /etc/ssh -xdev -type f -name 'ssh_host_*_key' -exec chmod 0600 {} \;
+#    args:
+#      executable: /bin/bash
+#    when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
+
+## Ensure permissions on SSH public host key files are configured
+## Rationale: If a public host key file is modified by an unauthorized user, the SSH service may be compromised.
+
+#  - name: Ensure permissions on SSH public host key files are configured
+#    shell: |
+#     find /etc/ssh -xdev -type f -name 'ssh_host_*_key.pub' -exec chmod 0644 {} \;
+#     find /etc/ssh -xdev -type f -name 'ssh_host_*_key.pub' -exec chown root:root {} \;
+#   args:
+#     executable: /bin/bash
+#   when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
+
+## Ensure SSH LogLevel is set to INFO
+## Rationale: SSH provides several logging levels with varying amounts of verbosity. DEBUG is specifically not recommended other than strictly for debugging SSH communications since it provides so much data that it is difficult to identify important security information. INFO level is the basic level that only records login activity of SSH users. In many situations, such as Incident Response, it is important to determine when a particular user was active on a system. The logout record can eliminate those users who disconnected, which helps narrow the field.
+
+- name: Ensure SSH Loglevel is set to INFO
+  ansible.builtin.lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: '^LogLevel'
+    line: LogLevel INFO
+
+## Ensure SSH X11 forwarding is disabled
+##Rationale: Disable X11 forwarding unless there is an operational requirement to use X11 applications directly. There is a small risk that the remote X11 servers of users who are logged in via SSH with X11 forwarding could be compromised by other users on the X11 server. Note that even if X11 forwarding is disabled, users can always install their own forwarders.
+
+- name: Ensure SSH X11 Forwarding is disabled
+  ansible.builtin.lineinfile:
+    dest: /etc/ssh/sshd_config
+    regexp: '^X11Forwarding'
+    line: X11Forwarding no
+    state: present
+  ignore_errors: true
+
+## Ensure SSH Max AuthTries is set to 4 or less
+## Rationale: Setting the MaxAuthTries parameter to a low number will minimize the risk of successful brute force attacks to the SSH server. While the recommended setting is 4, set the number based on site policy.
+
+- name: Ensure SSH MaxAuthTries is set to 4 or less
+  ansible.builtin.replace:
+    path: /etc/ssh/sshd_config
+    regexp: '^#MaxAuthTries'
+    replace: MaxAuthTries 4
+    state: present
+  ignore_errors: true
+
+## Ensure SSH IgnoreRhosts is enabled
+## Rationale: Setting this parameter forces users to enter a password when authenticating with ssh.
+
+#  - name: Ensure SSH IgnoreRhosts is enabled
+#    lineinfile:
+#      path: /etc/ssh/sshd_config
+#      regexp: '^IgnoreRhosts'
+#      line: IgnoreRhosts yes
+
+## Ensure SSH HostbasedAuthentication is disabled
+## Rationale: Even though the .rhosts files are ineffective if support is disabled in /etc/pam.conf ,disabling the ability to use .rhosts files in SSH provides an additional layer of protection.
+
+- name: Ensure SSH HostbasedAuthentication is disabled
+  ansible.builtin.replace:
+    path: /etc/ssh/sshd_config
+    regexp: '^# HostbasedAuthentication'
+    replace: HostbasedAuthentication no
+
+## Ensure SSH root login is disabled -- Disabled for Development and Test
+## Rationale: Disallowing root logins over SSH requires system admins to authenticate using their own individual account, then escalating to root via sudo or su . This in turn limits opportunity for non-repudiation and provides a clear audit trail in the event of a security incident
+
+#  - name: Ensure SSH root login is disabled
+#    lineinfile:
+#      path: /etc/ssh/sshd_config
+#      regexp: '^PermitRootLogin'
+#      line: PermitRootLogin no
+
+## Ensure SSH PermitEmptyPasswords is disabled
+## Rationale: Disallowing remote shell access toaccounts that have an empty password reduces the probability of unauthorized access to the system
+
+#  - name: Ensure SSH PermitEmptyPasswords is disabled
+#    lineinfile:
+#      path: /etc/ssh/sshd_config
+#      regexp: '^PermitEmptyPasswords'
+#      line: PermitEmptyPasswords no
+
+## Ensure SSH PermitUserEnvironment is disabled
+## Rationale: Permitting users the ability to set environment variables through the SSH daemon could potentially allow users to bypass security controls (e.g. setting an execution path that has ssh executing trojan'd programs)
+
+#  - name: Ensure PermitUserEnvironment is disabled
+#    lineinfile:
+#      path: /etc/ssh/sshd_config
+#      regexp: '^PermitUserEnvironment'
+#      line: PermitUserEnvironment no
+
+## Ensure SSH Idle Timeout Interval is configured
+## Rationale: Having no timeout value associated with a connection could allow an unauthorized user access to another user's ssh session (e.g. user walks away from their computer and doesn't lock the screen). Setting a timeout value at least reduces the risk of this happening.
+
+#  - name: Ensure SSH Idle Timeout Interval is configured
+#    lineinfile:
+#      path: /etc/ssh/sshd_config
+#      regexp: '{{ item.From }}'
+#      line: '{{  item.To }}'
+#    with_items:
+#      - { From: 'ClientAliveInterval', To: 'ClientAliveInterval 300'}
+#      - { From: 'ClientAliveCountMax', To: 'ClientAliveCountMax 0'}
+
+## Ensure SSH LoginGraceTime is set to one minute or less
+## Rationale: Setting the LoginGraceTime parameter to a low number will minimize the risk of successful brute force attacks to the SSH server. It will also limit the number of concurrent unauthenticated connections While the recommended setting is 60 seconds (1 Minute), set the number based on site policy.
+
+- name: Ensure SSH LoginGraceTime is set to one minute or less
+  ansible.builtin.replace:
+    dest: /etc/ssh/sshd_config
+    regexp: '#LoginGraceTime 120'
+    replace: LoginGraceTime 60
+  ignore_errors: true
+
+## Ensure message of the day is configured properly
+## Rationale: Warning messages inform users who are attempting to login to the system of their legal status regarding the system and must include the name of the organization that owns the system and any monitoring policies that are in place. Displaying OS and patch level information in login banners also has the side effect of providing detailed system information to attackers attempting to target specific exploits of a system. Authorized users can easily get this information by running the " uname -a " command once they have logged in. 
+
+
+
+
+## ## Ensure SSH PAM is enabled- for this moment this is not enabled as the tests need to continue.
+## Rationale: When usePAM is set to yes, PAM runs through account and session types properly. This is important if you want to restrict access to services based off of IP, time or other factors of the account. Additionally, you can make sure users inherit certain environment variables on login or disallow access to the server
+
+- name: Ensure SSH PAM is enabled
+  ansible.builtin.replace:
+    dest: /etc/ssh/sshd_config
+    regexp: '#UsePAM'
+    replace: UsePAM yes
+  when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
+
+## Ensure SSH AllowTCPForwarding is disabled
+## Rationale: Leaving port forwarding enabled can expose the organization to security risks and back-doors.
+
+#  - name: Ensure SSH AllowTcpForwarding is disabled
+#    replace:
+#      dest: /etc/ssh/sshd_config
+#      regexp: '#AllowTcpForwarding yes'
+#      replace: AllowTcpForwarding no
+#    when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
+
+## Ensure SSH MaxStartups is configured -- Applicable only for RH or CentOS distribution
+##Rationale: To protect a system from denial of service due to a large number of pending authentication connection attempts, use the rate limiting function of MaxStartups to protect availability of sshd logins and prevent overwhelming the daemon.
+
+- name: Ensure SSH MaxStartups is configured
+  ansible.builtin.replace:
+    dest: /etc/ssh/sshd_config
+    regexp: 'maxstartups 10:30:100'
+    replace: maxstartups 10:30:60
+  when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
+
+## Ensure SSH MaxSessions is set to 4 or less
+## Rationale: To protect a system from denial of service due to a large number of concurrent sessions, use the rate limiting function of MaxSessions to protect availability of sshd logins and prevent overwhelming the daemon.
+
+# - name: Ensure SSH MaxSessions is set 4 or less
+#   replace:
+#     dest: /etc/ssh/sshd_config
+#     regexp: '^maxsessions 10'
+#     replace: maxsessions 4
+#   when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
+
+## Ensure system-wide crypto policy is not over-ridden
+## Rationale: Over-riding or opting out of the system-wide crypto policy could allow for the use of less secure Ciphers, MACs, KexAlgoritms and GSSAPIKexAlgorithsm
+
+- name: Ensure system-wide crypto policy is not over-ridden
+  ansible.builtin.command: sed -ri "s/^\s*(CRYPTO_POLICY\s*=.*)$/# \1/" /etc/sysconfig/sshd
+  register: cryptopolicyoverride
+  when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
+  notify: restart sshd
+- ansible.builtin.debug: var=cryptopolicyoverride.stdout_lines
+
+
+

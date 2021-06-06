@@ -1,0 +1,71 @@
+---
+# tasks file for armour-copy-role
+- name: Copy Audit scripts
+  copy:
+    src: /home/ansible/scriptshardening/{{ item }}
+    dest: /tmp/
+    mode: '0777'
+  with_items:
+    - 01-nodupgroupnames-deb.sh
+    - 01-nodupgroupnames-rh.sh
+    - 02-nodupusrname-deb.sh
+    - 02-nodupusrname-rh.sh
+    - 03-nodupgids-deb.sh
+    - 03-nodupgids-rh.sh
+    - 04-nodupuids-deb.sh
+    - 04-nodupuids-rh.sh
+    - 05-allgroupexistpasswd.sh
+    - 06-nousersrhostsfiles-deb.sh
+    - 06-nousersrhostsfiles-rh.sh
+    - 07-netrcfilesnogrpworld-deb.sh
+    - 07-netrcfilesnogrpworld-rh.sh
+    - 08-nousersnetrcfiles-deb.sh
+    - 08-nousersnetrcfiles-rh.sh
+    - 09-dotfilesnogrpworld-deb.sh
+    - 09-dotfilesnogrpworld-rh.sh
+    - 10-usrsowntheirhome-deb.sh
+    - 10-usrsowntheirhome-rh.sh
+    - 11-usrhomeperms-deb.sh
+    - 11-usrhomeperms-rh.sh
+    - 12-allusrhomedirexist-deb.sh
+    - 13-rootpathintegrity-deb.sh
+    - 13-rootpathintegrity-rh.sh
+    - 14-lockoutforfailpwattempt-rh.sh
+    - 15-nousrforwardfile-deb.sh
+    - 15-nousrforwardfile-rh.sh
+    - 16-sysaccnologin-deb.sh
+- name: Transfer files to remote host
+  copy:
+    src: /tmp/{{ item }}
+    dest: /home/{{ item }}
+    mode: '0777'
+    remote_src: yes
+  with_items:
+    - 01-nodupgroupnames-deb.sh
+    - 01-nodupgroupnames-rh.sh
+    - 02-nodupusrname-deb.sh
+    - 02-nodupusrname-rh.sh
+    - 03-nodupgids-deb.sh
+    - 03-nodupgids-rh.sh
+    - 04-nodupuids-deb.sh
+    - 04-nodupuids-rh.sh
+    - 05-allgroupexistpasswd.sh
+    - 06-nousersrhostsfiles-deb.sh
+    - 06-nousersrhostsfiles-rh.sh
+    - 07-netrcfilesnogrpworld-deb.sh
+    - 07-netrcfilesnogrpworld-rh.sh
+    - 08-nousersnetrcfiles-deb.sh
+    - 08-nousersnetrcfiles-rh.sh
+    - 09-dotfilesnogrpworld-deb.sh
+    - 09-dotfilesnogrpworld-rh.sh
+    - 10-usrsowntheirhome-deb.sh
+    - 10-usrsowntheirhome-rh.sh
+    - 11-usrhomeperms-deb.sh
+    - 11-usrhomeperms-rh.sh
+    - 12-allusrhomedirexist-deb.sh
+    - 13-rootpathintegrity-deb.sh
+    - 13-rootpathintegrity-rh.sh
+    - 14-lockoutforfailpwattempt-rh.sh
+    - 15-nousrforwardfile-deb.sh
+    - 15-nousrforwardfile-rh.sh
+    - 16-sysaccnologin-deb.sh

@@ -1,0 +1,58 @@
+---
+# tasks file for secureboot-hardening
+## Ensure permissions on bootloader config are configured
+## Rationale: Setting the permissions to read and write for root only prevents non-root users from seeing the boot parameters or changing them. Non-root users who read the boot parameters may be able to identify weaknesses in security upon boot and be able to exploit them.
+- name: Configure permissions on bootloader config (1 of 2) - CentOS or Red Hat distributions
+  ansible.builtin.file:
+    name: /boot/grub2/grubenv
+    owner: root
+    group: root
+    mode: '0600'
+  when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
+
+- name: Configure permissions on bootloader config (2 of 2) - CentOS or Red Hat distributions
+  ansible.builtin.file:
+    name: /boot/efi/EFI/centos
+    owner: root
+    group: root
+    mode: '0600'
+  when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
+
+## Ensure a bootloader password is set
+## Rationale : Requiring a boot password upon execution of the boot loader will prevent an unauthorized user from entering boot parameters or changing the boot partition. This prevents users from weakening security (e.g. turning off SELinux at boot time).
+
+- name: Install Necessary packages -- CentOS or Red Hat Distribution
+  ansible.builtin.yum:
+    name: "{{ item }}"
+    state: present
+  when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
+  with_items:
+    - python2
+    - python3-pexpect
+
+- name: Configure a bootloader password -- CentOS or Red Hat distribution
+  ansible.builtin.expect:
+    command: grub2-setpassword
+    responses:
+      (?i)password: "Redhat12345!!"
+  ignore_errors: true
+  when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
+
+- name: Update Password -- CentOS or Red Hat Distribution
+  ansible.builtin.command: grub2-mkconfig -o /boot/grub2/grub.cfg
+  when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
+
+## Ensure authentication required for single user mode -- CentOS or Red Hat distribution
+## Rationale: Requiring authentication in single user mode (rescue mode) prevents an unauthorized user from rebooting the system into single user to gain root privileges without credentials.
+
+- name: Ensure authentication required for single user mode [1]
+  ansible.builtin.command: grep /systemd-sulogin-shell /usr/lib/systemd/system/rescue.service
+  register: authsinglerescue
+  when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
+- ansible.builtin.debug: var=authsinglerescue.stdout_lines
+
+- name: Ensure authentication required for single user mode [2]
+  ansible.builtin.command: grep /systemd-sulogin-shell /usr/lib/systemd/system/emergency.service
+  register: authsingleemergency
+  when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
+- ansible.builtin.debug: var=authsingleemergency.stdout

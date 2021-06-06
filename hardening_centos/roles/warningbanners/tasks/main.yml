@@ -1,0 +1,55 @@
+---
+# tasks file for warningbanners
+
+## Ensure message of the day is configured properly
+## Rationale: Warning messages inform users who are attempting to login to the system of their legal status regarding the system and must include the name of the organization that owns the system and any monitoring policies that are in place. Displaying OS and patch level  information in login banners also has the side effect of providing detailed system information to attackers attempting to target specific exploits of a system. Authorized users can easily get this information by running the " uname -a " command once they have logged in.
+
+- name: Ensure message of the day is configured properly
+  ansible.builtin.command: |
+    egrep '(\\v|\\r|\\m|\\s)' /etc/motd
+  args:
+    executable: /bin/bash
+  when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
+
+## Ensure /etc/motd has the correct permissions
+# Rationale: If the /etc/motd file does not have the correct ownership it could be modified by unauthorized users with incorrect or misleading information.
+
+- name: Ensure permissions on /etc/motd are configured
+  ansible.builtin.file:
+    path: /etc/motd
+    owner: root
+    group: root
+    mode: '0644'
+  when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
+
+## Rationale: If the /etc/issue file does not have the correct ownership it could be modified by unauthorized users with incorrect or misleading information.
+
+- name: Ensure permissions on /etc/issue are configured
+  ansible.builtin.file:
+    path: /etc/issue
+    owner: root
+    group: root
+    mode: '0644'
+
+## Rationale: If the /etc/issue.net file does not have the correct ownership it could be modified by unauthorized users with incorrect or misleading information.
+
+- name: Ensure permissions on /etc/issue.net are configured
+  ansible.builtin.file:
+    path: /etc/issue.net
+    owner: root
+    group: root
+    mode: '0644'
+
+## Ensure system wide crypto policy is not legacy
+## Rationale: If the Legacy system-wide crypto policy is selected, it includes support for TLS 1.0, TLS 1.1, and SSH2 protocols or later. The algorithms DSA, 3DES, and RC4 are allowed, while RSA and Diffie-Hellman parameters are accepted if larger than 1023-bits. These legacy protocols and algorithms can make the system vulnerable to attacks, including those listed in RFC 7457
+
+- name: Change the system-wide crypto policy
+  ansible.builtin.command: "{{ item }}"
+  register: cryptopolicies
+  ignore_errors: true
+  when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
+  with_items:
+    - /usr/bin/update-crypto-policies --set FUTURE
+    - /usr/bin/update-crypto-policies --show
+    - /usr/bin/update-crypto-policies --is-applied
+- ansible.builtin.debug: var=cryptopolicies.stdout_lines

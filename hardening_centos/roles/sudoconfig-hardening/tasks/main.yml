@@ -1,0 +1,40 @@
+---
+# tasks file for sudoconfig-hardening
+
+## Ensure Sudo is installed. sudo supports a plugin architecture for security policies and input/output logging. Third parties can develop and distribute their own policy and I/O logging plugins to work seamlessly with the sudo front end. The default security policy is sudoers, which is configured via the file /etc/sudoers.
+- name: Ensure sudo is installed
+  ansible.builtin.yum:
+    name: sudo
+    state: present
+  when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
+
+## Ensure sudo commands use pty
+## Rationale: Attackers can run a malicious program using sudo which would fork a background process that remains even when the main program has finished executing
+- name: Ensure sudo commands use pty
+  ansible.builtin.command: grep -Ei '^\s*Defaults\s+(\[^#]+,\s*)?use_pty' /etc/sudoers
+  check_mode: no
+  ignore_errors: yes
+  register: sudousepty
+  changed_when: no
+- debug: var=sudousepty.stdout_lines
+
+## Ensure sudo log file exists
+## Rationale: A sudo log file simplifies auditing of sudo commands
+- name: Ensure a log file for sudo is configured
+  ansible.builtin.command: grep -Fxq "logfile=" /etc/sudoers
+  register: sudolog
+  check_mode: no
+  ignore_errors: yes
+  changed_when: no
+
+- name: Checking /etc/suders file
+  ansible.builtin.command: echo "Log File configured, Moving onto next task"
+  when: sudolog.rc == 0
+
+- name: Configure a sudo log file
+  ansible.builtin.lineinfile:
+    path: /etc/sudoers
+    line: Defaults logfile="/var/log/sudo.log"
+  when: sudolog.rc != 0
+- ansible.builtin.debug: var=sudolog.stdout_lines
+
