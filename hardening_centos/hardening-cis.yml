@@ -1,0 +1,33 @@
+---
+- hosts: prod
+  roles:
+    - copy-scrips-role
+    - filesystem-hardening
+    - softwareupdate-hardening
+    - sudoconfig-hardening
+    - fileintegrity-checking
+    - secureboot-hardening
+    - processhardening-coredumps
+    - manacccontrol-hardening
+    - warningbanners
+    - services-hardening
+    - network-configuration
+    - firewall-hardening
+    - logging-auditing
+    - aaa-hardening
+    - ssh-hardening
+    - authselect-hardening
+    - pam-hardening
+    - usraccenv-hardening
+    - systemmain-hardening
+    - usr-grp-settings
+  tasks:
+
+# Comment: I created this user to manage any tasks related to provisioning if required.
+  - name: Create an Admin user to manage tasks
+    user:
+      name: admin
+      password: '$6$yHxAvwa82pPuAOHh$O7kjs2pqQWp0.Tg7qejlQfXMrxckT1OvGXbYoCKv/lBfORitoTwReHNsSyir38jtybihDyruBdD/JPN.oVcNs.'
+      groups: wheel
+      update_password: always
+    when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
