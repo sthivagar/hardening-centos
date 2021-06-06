@@ -2,7 +2,7 @@
 - hosts: prod
 ## armour-copy-role now copies all the scripts required.
   roles:
-    - armour-copy-role
+    - scripts-copy-role
     - filesystem-hardening
     - softwareupdate-hardening
     - sudoconfig-hardening
