@@ -1,33 +1,43 @@
 ---
-- hosts: prod
-  roles:
-    - copy-scrips-role
-    - filesystem-hardening
-    - softwareupdate-hardening
-    - sudoconfig-hardening
-    - fileintegrity-checking
-    - secureboot-hardening
-    - processhardening-coredumps
-    - manacccontrol-hardening
-    - warningbanners
-    - services-hardening
-    - network-configuration
-    - firewall-hardening
-    - logging-auditing
-    - aaa-hardening
-    - ssh-hardening
-    - authselect-hardening
-    - pam-hardening
-    - usraccenv-hardening
-    - systemmain-hardening
-    - usr-grp-settings
+- hosts: <tbd>
   tasks:
-
-# Comment: I created this user to manage any tasks related to provisioning if required.
-  - name: Create an Admin user to manage tasks
-    user:
-      name: admin
-      password: '$6$yHxAvwa82pPuAOHh$O7kjs2pqQWp0.Tg7qejlQfXMrxckT1OvGXbYoCKv/lBfORitoTwReHNsSyir38jtybihDyruBdD/JPN.oVcNs.'
-      groups: wheel
-      update_password: always
-    when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
+  - name: Copy scripts
+    import_tasks: ./roles/copy-scrips-role/tasks/main.yml
+  - name: File System Hardening 
+    import_tasks: ./roles/filesystem-hardening/tasks/main.yml
+  - name: Software Update Hardening
+    import_tasks: ./roles/softwareupdate-hardening/tasks/main.yml
+  - name: Sudo config hardening
+    import_tasks: ./roles/sudoconfig-hardening/tasks/main.yml
+  - name: File Integrity Checking
+    import_tasks: ./roles/fileintegrity-checking/tasks/main.yml
+  - name: Secure boot hardening
+    import_tasks: ./roles/secureboot-hardening/tasks/main.yml
+  - name: Process Hardening & Coredumps
+    import_tasks: ./roles/processhardening-coredumps/tasks/main.yml
+  - name: Mandatory Access Control Hardening 
+    import_tasks: ./roles/manacccontrol-hardening/tasks/main.yml
+  - name: Warning Banners
+    import_tasks: ./roles/warningbanners/tasks/main.yml
+  - name: Services Hardening
+    import_tasks: ./roles/services-hardening/tasks/main.yml
+  - name: Network Configuration  
+    import_tasks: ./roles/network-configuration/tasks/main.yml
+  - name: Firewall Hardening
+    import_tasks: ./roles/firewall-hardening/tasks/main.yml
+  - name: Logging and Auditing
+    import_tasks: ./roles/logging-auditing/tasks/main.yml
+  - name: AAA Hardening
+    import_tasks: ./roles/aaa-hardening/tasks/main.yml
+  - name: SSH Hardening
+    import_tasks: ./roles/ssh-hardening/tasks/main.yml
+  - name: Authselect Hardening 
+    import_tasks: ./roles/authselect-hardening/tasks/main.yml
+  - name: PAM Hardening 
+    import_tasks: ./roles/pam-hardening/tasks/main.yml
+  - name: User Account Environment Hardening
+    import_tasks: ./roles/usraccenv-hardening/tasks/main.yml
+  - name: System Main hardening
+    import_tasks: ./roles/systemmain-hardening/tasks/main.yml
+  - name: User Group Settings
+    import_tasks: ./roles/usr-grp-settings/tasks/main.yml

@@ -3,7 +3,7 @@
 
 ## Activate GPGcheck globally
 ## Rationale: It is important to ensure that an RPM's package signature is always checked prior to installation to ensure that the software is obtained from a trusted source.
-- name: Ensure gpgcheck is globally activated
+- name: CIS Hardening | Ensuregpgcheck is globally activated
   ansible.builtin.command: grep ^gpgcheck /etc/yum.conf
   register: gpgcheckglobal
   when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'

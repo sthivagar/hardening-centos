@@ -18,7 +18,7 @@
 # Ensure lockout for failed password attempts is configured- Currently under troubleshooting process
 ## Rationale: Locking out user IDs after n unsuccessful consecutive login attempts mitigates brute force password attacks against your systems.
 
-- name: Ensure lockout for failed password attempts is configure - CentOS or Red Hat distribution
+- name: CIS Hardening | Ensurelockout for failed password attempts is configure - CentOS or Red Hat distribution
   lineinfile:
     path: /etc/pam.d/system-auth
     regexp: '^pam_faillock.so preauth silent unlock_time=1200'
@@ -30,7 +30,7 @@
 # Ensure password hashing algorithm is SHA-512
 ## Rationale: The SHA-512 algorithm provides much stronger hashing than MD5, thus providing additional protection to the system by increasing the level of effort for an attacker to successfully determine passwords.
 
-- name: Ensure password hashing algorithm is SHA-512 -- CentOS or Red Hat distribution
+- name: CIS Hardening | Ensurepassword hashing algorithm is SHA-512 -- CentOS or Red Hat distribution
   replace:
     path: /etc/pam.d/system-auth
     regexp: 'pam_unix.so shadow  try_first_pass use_authtok'
@@ -41,7 +41,7 @@
 ## Ensure password reuse is limited
 ## Rationale: Forcing users not to reuse their past 5 passwords make it less likely that an attacker will be able to guess the password. Note that these change only apply to accounts configured on the local system.
 
-- name: Ensure password reuse is limited -- CentOS or Red Hat distribution
+- name: CIS Hardening | Ensurepassword reuse is limited -- CentOS or Red Hat distribution
   replace:
     path: /etc/pam.d/system-auth
     regexp: '^pam_unix.so sha512 shadow try_first_pass use_authtok'

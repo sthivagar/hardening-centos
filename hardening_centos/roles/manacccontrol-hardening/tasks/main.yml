@@ -1,24 +1,17 @@
 ---
-# tasks file for manacccontrol-hardening
-## Ensure SElinux is installed
-## Rationale: Without a Mandatory Access Control system installed only the default Discretionary Access Control system will be available.
 - name: Verify and Install SELinux
   ansible.builtin.yum:
     name: libselinux
     state: present
   when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
 
-## Ensure SELinux or AppArmor are installed
-## Rationale: Without a Mandatory Access Control system installed only the default Discretionary Access Control system will be available.
-- name: Ensure SELinux or Apparmor is installed
+- name: CIS Hardening | EnsureSELinux or Apparmor is installed
   ansible.builtin.apt:
     name: apparmor
     state: present
   when: ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
 
-# Ensure SElinux is not disabled in bootloader configuration
-## Rationale: SELinux must be enabled at boot time in your grub configuration to ensure that the controls it provides are not overridden.
-- name: Ensure SELinux is not disabled in the bootloader configuration
+- name: CIS Hardening | EnsureSELinux is not disabled in the bootloader configuration
   ansible.builtin.replace:
     path: /etc/default/grub
     regexp: "{{ item.regexp }}"
@@ -28,9 +21,7 @@
     - { regexp: 'selinux=0', replace: '' }
     - { regexp: 'enforcing=0', replace: '' }
 
-# Ensure AppArmor is not disabled in bootloader configuration
-
-- name: Ensure AppArmor is not disabled in the bootloader configuration
+- name: CIS Hardening | EnsureAppArmor is not disabled in the bootloader configuration
   ansible.builtin.replace:
     path: /etc/default/grub
     regexp: 'apparmor=0'
@@ -43,16 +34,13 @@
     executable: /bin/bash
   when: ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
 
-#  - name: Ensure SELinux policy is configured
+#  - name: CIS Hardening | EnsureSELinux policy is configured
 #    command: sestatus | grep "Loaded"
 #    register: selinuxstatus
 #  - debug:
 #      msg: "{{ selinuxstatus.stdout }}"
 
-## Ensure SELinux state is enforcing
-## Rationale: SELinux must be enabled at boot time in to ensure that the controls it provides are in effect at all times.
-
-- name: Ensure SELinux state is enforcing
+- name: CIS Hardening | EnsureSELinux state is enforcing
   ansible.builtin.shell: sestatus
   register: sestatus
   args:
@@ -60,18 +48,13 @@
   when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
 - debug: var=sestatus.stdout_lines
 
-## Ensure Apparmour profiles are enforcing
-## Rationale: Run the following command and verify that profiles are loaded, no profiles are in complain mode, and no processes are unconfined
-- name: Ensure AppArmour profiles are enforcing
+- name: CIS Hardening | EnsureAppArmour profiles are enforcing
   ansible.builtin.command: apparmor_status
   register: apparmour
   when: ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
 - debug: var=apparmour.stdout_lines
 
-## Ensure no unconfined daemons exist
-## Rationale: Since daemons are launched and descend from the init process, they will inherit the security context label initrc_t . This could cause the unintended consequence of giving the process more permission than it requires.
-
-#  - name: Ensure no unconfined daemons exist
+#  - name: CIS Hardening | Ensureno unconfined daemons exist
 #    command: |
 #      ps -eZ | egrep "initrc" | egrep -vw "tr|ps|egrep|bash|awk" | tr ':' ' ' | awk '{ print $NF }'
 #    args:
@@ -80,9 +63,7 @@
 #    when: ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
 #  - debug: var=unconfined.stdout_lines
 
-## Service Clients and SE Troubleshoot
-## Rationale : Unusable Service clients that are insecure should be uninstalled to prevent accidental or intentional misuse.
-- name: Ensure SETroubleshoot is not installed
+- name: CIS Hardening | EnsureSETroubleshoot is not installed
   ansible.builtin.yum:
     name: "{{ item }}"
     state: absent

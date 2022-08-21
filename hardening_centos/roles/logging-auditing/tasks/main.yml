@@ -1,10 +1,6 @@
 ---
 # tasks file for logging-auditing
 
-## Configure auditd & syslog-ng - Red Hat and Debian
-## Rationale: If the syslog-ng service is not activated the system may default to the syslogd service or lack logging instead.
-
-
 - name: Install auditd package - CentOS or Red Hat specific
   ansible.builtin.yum:
     name: "{{ item }}"
@@ -13,9 +9,6 @@
   with_items:
     - "audit"
     - "audit-libs"
-
-## Ensure auditing for processes that start prior to auditd is enabled
-## Rationale: Audit events need to be captured on processes that start up prior to auditd , so that potential malicious activity cannot go undetected. During boot if audit=1, then the backlog will hold 64 records. If more that 64 records are created during boot, auditd records will be lost and potential malicious activity could go undetected.
 
 - name: Configure grub2 in order to start auditd - CentOS or Red Hat distributions only
   ansible.builtin.lineinfile:
@@ -32,30 +25,21 @@
 - ansible.builtin.debug:
     var: updategrubaudCen.stdout_lines
 
-## Ensure audit log storage size is configured
-## Rationale: It is important that an appropriate size is determined for log files so that they do not impact the system and audit data is not lost.
-
-- name: Ensure audit log storage size is configured
+- name: CIS Hardening | Ensure audit log storage size is configured
   ansible.builtin.replace:
     dest: /etc/audit/auditd.conf
     regexp: '^max_log_file = 8'
     replace: max_log_file = 100
   when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
 
-## Ensure audit logs are not automatically deleted
-## Rationale: In high security contexts, the benefits of maintaining a long audit history exceed the cost of storing the audit history.
-
-- name: Ensure audit log storage size is configured
+- name: CIS Hardening | Ensure audit log storage size is configured
   ansible.builtin.replace:
     dest: /etc/audit/auditd.conf
     regexp: '^max_log_file_action = ROTATE'
     replace: 'max_log_file_action = keep_logs'
   when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
 
-## Ensure system is disabled when audit logs are full
-## Rationale: In high security contexts, the risk of detecting unauthorized access or nonrepudiation exceeds the benefit of the system's availability.
-
-#  - name: Ensure system is disabled when audit logs are full
+#  - name: CIS Hardening | Ensuresystem is disabled when audit logs are full
 #    lineinfile:
 #      dest: /etc/audit/auditd.conf
 #      regexp: "{{ item.regexp }}"
@@ -77,7 +61,7 @@
   ignore_errors: true
   when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
 
-- name: Ensure changes to system administration scope (sudoers) is collected
+- name: CIS Hardening | Ensure changes to system administration scope (sudoers) is collected
   ansible.builtin.lineinfile:
     dest: /etc/audit/rules.d/scope.rules
     line: "{{item }}"
@@ -89,7 +73,7 @@
 ## Ensure login and logout events are collected
 ## Monitoring login/logout events could provide a system administrator with information associated with brute force attacks against user logins.
 
-- name: Ensure login and logout events are collected
+- name: CIS Hardening | Ensurelogin and logout events are collected
   ansible.builtin.lineinfile:
     dest: /etc/audit/rules.d/audit.rules
     line: "{{ item }}"
@@ -108,7 +92,7 @@
   ignore_errors: true
   when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
 
-- name: Ensure session initiation information is collected
+- name: CIS Hardening | Ensuresession initiation information is collected
   ansible.builtin.lineinfile:
     dest: /etc/audit/rules.d/logins.rules
     line: "{{ item }}"
@@ -129,7 +113,7 @@
   ignore_errors: true
   when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
 
-- name: Ensure events that modify date and time information are collected
+- name: CIS Hardening | Ensureevents that modify date and time information are collected
   ansible.builtin.lineinfile:
     dest: /etc/audit/rules.d/time-change.rules
     line: "{{ item }}"
@@ -148,7 +132,7 @@
   ignore_errors: true
   when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
 
-- name: Ensure events that modify date and time information are collected
+- name: CIS Hardening | Ensureevents that modify date and time information are collected
   ansible.builtin.lineinfile:
     dest: /etc/audit/rules.d/system-locale.rules
     line: "{{ item }}"
@@ -168,7 +152,7 @@
   ignore_errors: true
   when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
 
-- name: Ensure events that modify date and time information are collected
+- name: CIS Hardening | Ensureevents that modify date and time information are collected
   ansible.builtin.lineinfile:
     dest: /etc/audit/rules.d/identity.rules
     line: "{{ item }}"
@@ -190,7 +174,7 @@
   ignore_errors: true
   when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
 
-- name: Ensure event that modify the systems Mandatory Access controls are collected
+- name: CIS Hardening | Ensureevent that modify the systems Mandatory Access controls are collected
   ansible.builtin.lineinfile:
     dest: /etc/audit/rules.d/MAC-policy.rules
     line: "{{ item }}"
@@ -202,7 +186,7 @@
 ## Ensure discretionary access control permission modification events are collected
 ## Rationale: Monitoring for changes in file attributes could alert a system administrator to activity that could indicate intruder activity or policy violation.
 
-- name: Ensure discretionary access control permission modification events are collected
+- name: CIS Hardening | Ensurediscretionary access control permission modification events are collected
   ansible.builtin.lineinfile:
     dest: /etc/audit/audit.rules
     line: "{{ item }}"
@@ -222,7 +206,7 @@
   ignore_errors: true
   when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
 
-- name: Ensure discretionary access control permission modification events are collected
+- name: CIS Hardening | Ensurediscretionary access control permission modification events are collected
   ansible.builtin.lineinfile:
     dest: /etc/audit/rules.d/perm_mod.rules
     line: "{{ item }}"
@@ -235,9 +219,6 @@
     - "-a always,exit -F arch=b64 -S setxattr -S lsetxattr -S fsetxattr -S removexattr -S lremovexattr -S fremovexattr -F auid>=1000 -F auid!=4294967295 -k perm_mod"
     - "-a always,exit -F arch=b32 -S setxattr -S lsetxattr -S fsetxattr -S removexattr -S lremovexattr -S fremovexattr -F auid>=1000 -F auid!=4294967295 -k perm_mod"
 
-## Ensure unsuccessful unauthorized file access attempts are collected
-## Rationale: Failed attempts to open, create or truncate files could be an indication that an individual or process is trying to gain unauthorized access to the system.
-
 - name: Create access.rules file
   ansible.builtin.file:
     path: /etc/audit/rules.d/access.rules
@@ -245,7 +226,7 @@
   ignore_errors: true
   when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
 
-- name: Ensure discretionary access control permission modification events are collected
+- name: CIS Hardening | Ensurediscretionary access control permission modification events are collected
   ansible.builtin.lineinfile:
     dest: /etc/audit/rules.d/access.rules
     line: "{{ item }}"
@@ -261,9 +242,6 @@
 
 ## To be worked on
 
-## Ensure successful file system mounts are collected
-## Rationale : It is highly unusual for a non privileged user to mount file systems to the system. While tracking mount commands gives the system administrator evidence that external media may have been mounted (based on a review of the source of the mount and confirming it's an external media type), it does not conclusively indicate that data was exported to the media. System administrators who wish to determine if data were exported, would also have to track successful open , creat and truncate system calls requiring write access to a file under the mount point of the external media file system. This could give a fair indication that a write occurred. The only way to truly prove it, would be to track successful writes to the external media. Tracking write system calls could quickly fill up the audit log and is not recommended. Recommendations on configuration options to track data export to media is beyond the scope of this document.
-
 - name: Create mounts.rules file
   ansible.builtin.file:
     path: /etc/audit/rules.d/mounts.rules
@@ -271,7 +249,7 @@
   ignore_errors: true
   when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
 
-- name: Ensure successful file system mounts are collected
+- name: CIS Hardening | Ensuresuccessful file system mounts are collected
   ansible.builtin.lineinfile:
     dest: /etc/audit/rules.d/mounts.rules
     line: "{{ item }}"
@@ -280,9 +258,6 @@
     - "-a always,exit -F arch=b64 -S mount -F auid>=1000 -F auid!=4294967295 -k mounts"
     - "-a always,exit -F arch=b32 -S mount -F auid>=1000 -F auid!=4294967295 -k mounts"
 
-## Ensure file deletion events by users are collected
-## Rationale: Monitoring these calls from non-privileged users could provide a system administrator with evidence that inappropriate removal of files and file attributes associated with protected files is occurring. While this audit option will look at all events, system administrators will want to look for specific privileged files that are being deleted or altered.
-
 - name: Create delete.rules file
   ansible.builtin.file:
     path: /etc/audit/rules.d/delete.rules
@@ -290,7 +265,7 @@
   ignore_errors: true
   when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
 
-- name: Ensure file deletion events by users are collected
+- name: CIS Hardening | Ensurefile deletion events by users are collected
   ansible.builtin.lineinfile:
     dest: /etc/audit/rules.d/delete.rules
     line: "{{ item }}"
@@ -299,13 +274,6 @@
     - "-a always,exit -F arch=b64 -S unlink -S unlinkat -S rename -S renameat -F auid>=1000 -F auid!=4294967295 -k delete"
     - "-a always,exit -F arch=b32 -S unlink -S unlinkat -S rename -S renameat -F auid>=1000 -F auid!=4294967295 -k delete"
 
-
-## Ensure kernel module loading and unloading is collected
-## Rationale: Monitoring the use of insmod , rmmod and modprobe could provide system administrators with evidence that an unauthorized user loaded or unloaded a kernel module, possibly compromising the security of the system. Monitoring of the init_module and delete_module system calls would reflect an unauthorized user attempting to use a different program to load and unload modules.
-
-
-## In immutable mode, unauthorized users cannot execute changes to the audit system to potentially hide malicious activity and then put the audit rules back. Users would most likely notice a system reboot and that could alert administrators of an attempt to make unauthorized audit changes.
-
 - name: Create modules.rules file
   ansible.builtin.file:
     path: /etc/audit/rules.d/modules.rules
@@ -313,7 +281,7 @@
   ignore_errors: true
   when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
 
-- name: Ensure kernel module loading and unloading is collected
+- name: CIS Hardening | Ensure kernel module loading and unloading is collected
   ansible.builtin.lineinfile:
     dest: /etc/audit/rules.d/modules.rules
     line: "{{ item }}"
@@ -331,7 +299,7 @@
   ignore_errors: true
   when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
 
-- name: Ensure kernel module loading and unloading is collected
+- name: CIS Hardening | Ensure kernel module loading and unloading is collected
   lineinfile:
     dest: /etc/audit/rules.d/99-finalize.rules
     line: "{{ item }}"
@@ -342,46 +310,34 @@
 ## Ensure changes to system administration actions are collected
 ## Rationale: Changes in /var/log/sudo.log indicate that an administrator has executed a command or the log file itself has been tampered with. Administrators will want to correlate the events written to the audit trail with the records written to /var/log/sudo.log to verify if unauthorized commands have been executed.
 
-- name: Ensure changes to system administrator actions (sudolog) is collected
+- name: CIS Hardening | Ensure changes to system administrator actions (sudolog) is collected
   ansible.builtin.lineinfile:
     dest: /etc/audit/rules.d/audit.rules
     line: -w /var/log/sudo.log -p wa -k actions
   when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
 
-## Ensure journald is configured to send logs to rsyslog
-## Rationale: Storing log data on a remote host protects log integrity from local attacks. If an attacker gains root access on the local system, they could tamper with or remove log data that is stored on the local system.
-
-- name: Ensure journald is configured to send logs to rsyslog
+- name: CIS Hardening | Ensure journald is configured to send logs to rsyslog
   ansible.builtin.lineinfile:
     dest: /etc/systemd/journald.conf
     regexp: '#ForwardToSyslog=no'
     line: ForwardToSyslog=yes
   when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
 
-## Ensure journald is configured to compress large log files
-## Rationale: Uncompressed large files may unexpectedly fill a filesystem leading to resource unavailability. Compressing logs prior to write can prevent sudden, unexpected filesystem impacts.
-
-- name: Ensure journald is configured to compress large log files
+- name: CIS Hardening | Ensure journald is configured to compress large log files
   ansible.builtin.lineinfile:
     dest: /etc/systemd/journald.conf
     regexp: '#Compress=no'
     line: Compress=yes
   when: ansible_distribution == 'CentOS' or ansible_distribution == ' Red Hat Enterprise Linux'
 
-## Ensure journald is configured to write logfiles to persistnent disk
-## Rationale: Writing log data to disk will provide the ability to forensically reconstruct events which may have impacted the operations or security of a system even after a system crash or reboot.
-
-- name: Ensure journald is configured to compress large log files
+- name: CIS Hardening | Ensure journald is configured to compress large log files
   ansible.builtin.lineinfile:
     dest: /etc/systemd/journald.conf
     regexp: '#Storage=auto'
     line: Storage=persistent
   when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
 
-## Ensure permissions on all log files are configured
-## It is important to ensure that log files have the correct permissions to ensure that sensitive data is archived and protected.
-
-- name: Ensure permissions on all log files are configured
+- name: CIS Hardening | Ensure permissions on all log files are configured
   ansible.builtin.command: find /var/log -type f -exec chmod g-wx,o-rwx "{}" + -o -type d -exec chmod g-w,o-rwx "{}" +
   register: logfileperms
   args:

@@ -30,7 +30,7 @@
   when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
 
 ## Rationale: The rsyncd service presents a security risk as it uses unencrypted protocols for communication.
-#  - name: Ensure rsync service is not enabled - CentOS or Red Hat specific
+#  - name: CIS Hardening | Ensurersync service is not enabled - CentOS or Red Hat specific
 #    systemd:
 #      name: rsync
 #      enabled: no

@@ -37,7 +37,7 @@
     - cron.weekly
     - cron.d
 
-- name: Ensure cron/at is restricted to authorized users only
+- name: CIS Hardening | Ensurecron/at is restricted to authorized users only
   ansible.builtin.file:
     name: /etc/{{ item }}
     state: absent

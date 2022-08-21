@@ -2,7 +2,7 @@
 # tasks file for sudoconfig-hardening
 
 ## Ensure Sudo is installed. sudo supports a plugin architecture for security policies and input/output logging. Third parties can develop and distribute their own policy and I/O logging plugins to work seamlessly with the sudo front end. The default security policy is sudoers, which is configured via the file /etc/sudoers.
-- name: Ensure sudo is installed
+- name: CIS Hardening | Ensuresudo is installed
   ansible.builtin.yum:
     name: sudo
     state: present
@@ -10,7 +10,7 @@
 
 ## Ensure sudo commands use pty
 ## Rationale: Attackers can run a malicious program using sudo which would fork a background process that remains even when the main program has finished executing
-- name: Ensure sudo commands use pty
+- name: CIS Hardening | Ensuresudo commands use pty
   ansible.builtin.command: grep -Ei '^\s*Defaults\s+(\[^#]+,\s*)?use_pty' /etc/sudoers
   check_mode: no
   ignore_errors: yes
@@ -20,7 +20,7 @@
 
 ## Ensure sudo log file exists
 ## Rationale: A sudo log file simplifies auditing of sudo commands
-- name: Ensure a log file for sudo is configured
+- name: CIS Hardening | Ensurea log file for sudo is configured
   ansible.builtin.command: grep -Fxq "logfile=" /etc/sudoers
   register: sudolog
   check_mode: no

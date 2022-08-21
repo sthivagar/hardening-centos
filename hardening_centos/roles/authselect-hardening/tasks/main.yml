@@ -27,7 +27,7 @@
 ## Ensure authselect includes with-faillock
 ## Rationale: Locking out user IDs after n unsuccessful consecutive login attempts mitigates brute force password attacks against your systems.
 
-- name: Ensure authselect includes with-faillock
+- name: CIS Hardening | Ensureauthselect includes with-faillock
   command: authselect select custom/armour-security with-sudo with-faillock without-nullok
   args:
     executable: /bin/bash

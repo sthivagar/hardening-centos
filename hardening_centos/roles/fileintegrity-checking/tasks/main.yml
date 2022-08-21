@@ -1,7 +1,5 @@
 ---
 # tasks file for fileintegrity-checking
-#Check AIDE is installed and present. AIDE is known as Advanced Intrusion Detection Environment which basically runs a scan on newly created files.
-## Rationale: By monitoring the filesystem state compromised files can be detected to prevent or limit the exposure of accidental or malicious misconfigurations or modified binaries.
 - name: Check AIDE is installed and present - CentOS or Red Hat Distribution only
   ansible.builtin.yum:
     name: aide
@@ -30,10 +28,7 @@
       - ansible_distribution == 'Centos' or ansible_distribution == 'Red Hat Enterprise Linux'
       - ccentos.stat.exists == false
 
-## Ensure AIDE is configured to check the file system integrity
-## Rationale: Periodic file checking allows the system administrator to determine on a regular basis if critical files have been changed in an unauthorized fashion.
-
-- name: Ensure filesystem integrity is regularly checked -- CentOS or Red Hat distribution
+- name: CIS Hardening | Ensure filesystem integrity is regularly checked
   ansible.builtin.cron:
     name: aide_check
     minute: "0"
